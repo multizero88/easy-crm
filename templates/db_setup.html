@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка базы данных CRM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #090a0f;
+            --card-bg: rgba(18, 20, 29, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #8e92a8;
+            --accent-primary: #7c4dff;
+            --accent-secondary: #00e676;
+            --accent-hover: #9e7dff;
+            --input-bg: rgba(255, 255, 255, 0.04);
+            --input-focus-border: rgba(124, 77, 255, 0.5);
+            --shadow-primary: 0 20px 50px rgba(0, 0, 0, 0.3);
+            --shadow-glow: 0 0 30px rgba(124, 77, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 230, 118, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-primary), var(--shadow-glow);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        input:focus {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 15px rgba(124, 77, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 15px;
+            border-radius: 14px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .toggle-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+            scale: 1.3;
+        }
+
+        .toggle-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            text-transform: none;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .tunnel-fields {
+            display: none;
+            background: rgba(124, 77, 255, 0.03);
+            border: 1px solid rgba(124, 77, 255, 0.08);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tunnel-fields.active {
+            display: block;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent-primary), #536dfe);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(124, 77, 255, 0.3);
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(124, 77, 255, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+            color: var(--text-primary);
+            margin-top: 15px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        .status-message.error {
+            display: block;
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid rgba(255, 23, 68, 0.2);
+            color: #ff5252;
+        }
+
+        .migration-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .migration-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="header">
+            <h1>Удаленная база данных</h1>
+            <p>Укажите параметры подключения к базе данных MySQL/MariaDB вашего хостинга для совместной работы нескольких компьютеров.</p>
+        </div>
+
+        <form id="setup-form" onsubmit="saveConfig(event)">
+            <!-- Toggle Tunnel Option -->
+            <div class="toggle-group">
+                <input type="checkbox" id="use-tunnel" onchange="toggleTunnelView(this.checked)">
+                <label for="use-tunnel">Использовать HTTP-туннель (рекомендуется для закрытых MySQL портов)</label>
+            </div>
+
+            <!-- Tunnel Credentials -->
+            <div id="tunnel-box" class="tunnel-fields">
+                <div class="form-group">
+                    <label for="tunnel-url">URL Туннеля (db_tunnel.php на вашем сайте)</label>
+                    <input type="url" id="tunnel-url" placeholder="например, http://178.218.207.135/easy-crm/db_tunnel.php">
+                </div>
+                <div class="form-group">
+                    <label for="api-key">Ключ доступа к туннелю</label>
+                    <input type="text" id="api-key" value="EASY_CRM_TUNNEL_KEY_2026_SECURE_9281" placeholder="Ключ авторизации API">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label for="host">Хост базы данных (локально)</label>
+                    <input type="text" id="host" required value="localhost" placeholder="например, localhost">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="port">Порт базы</label>
+                    <input type="number" id="port" required value="3306">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="database">Имя базы данных</label>
+                <input type="text" id="database" required placeholder="например, easy_crm">
+            </div>
+
+            <div class="form-group">
+                <label for="user">Имя пользователя DB</label>
+                <input type="text" id="user" required placeholder="например, crm_user">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль DB</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn">Подключиться и сохранить</button>
+        </form>
+
+        <div id="status" class="status-message"></div>
+
+        <div id="migration-box" class="migration-section">
+            <label style="margin-bottom: 12px; text-align: center; display: block;">Импорт существующих данных</label>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.4; text-align: center;">
+                Если у вас уже были занесены товары и продажи на этом компьютере, вы можете перенести их в новую общую базу данных.
+            </p>
+            <button onclick="startMigration()" id="migrate-btn" class="btn btn-secondary">Перенести данные из SQLite</button>
+            <button onclick="finishSetup()" id="skip-btn" class="btn btn-secondary" style="margin-top: 10px; background: transparent; border-color: transparent;">Завершить настройку без импорта</button>
+        </div>
+    </div>
+
+    <script>
+        let isSaving = false;
+
+        // Auto-fill tunnel URL with current host if they check it
+        const currentHostIp = "178.218.207.135";
+        document.getElementById("tunnel-url").value = `http://${currentHostIp}/easy-crm/db_tunnel.php`;
+
+        function toggleTunnelView(checked) {
+            const tunnelBox = document.getElementById("tunnel-box");
+            const hostInput = document.getElementById("host");
+            if (checked) {
+                tunnelBox.classList.add("active");
+                hostInput.value = "localhost"; // Local access from PHP script on server
+            } else {
+                tunnelBox.classList.remove("active");
+                hostInput.value = "178.218.207.135"; // Direct remote access
+            }
+        }
+
+        function showStatus(text, type) {
+            const statusDiv = document.getElementById("status");
+            statusDiv.className = "status-message " + type;
+            statusDiv.innerText = text;
+        }
+
+        function saveConfig(e) {
+            e.preventDefault();
+            if (isSaving) return;
+            isSaving = true;
+
+            const submitBtn = document.getElementById("submit-btn");
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Проверка подключения...";
+
+            const useTunnel = document.getElementById("use-tunnel").checked;
+            const tunnelUrl = document.getElementById("tunnel-url").value.trim();
+            const apiKey = document.getElementById("api-key").value.trim();
+
+            const host = document.getElementById("host").value.trim();
+            const port = parseInt(document.getElementById("port").value) || 3306;
+            const database = document.getElementById("database").value.trim();
+            const user = document.getElementById("user").value.trim();
+            const password = document.getElementById("password").value;
+
+            fetch('/api/setup-db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    use_tunnel: useTunnel,
+                    tunnel_url: tunnelUrl,
+                    api_key: apiKey,
+                    host, 
+                    port, 
+                    database, 
+                    user, 
+                    password 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                isSaving = false;
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Подключиться и сохранить";
+
+                if (data.success) {
+                    showStatus("Успешное подключение! База данных инициализирована.", "success");
+                    document.getElementById("migration-box").classList.add("active");
+                    
+                    // Disable config inputs
+                    document.getElementById("use-tunnel").disabled = true;
+                    document.getElementById("tunnel-url").disabled = true;
+                    document.getElementById("api-key").disabled = true;
+                    document.getElementById("host").disabled = true;
+                    document.getElementById("port").disabled = true;
+                    document.getElementById("database").disabled = true;
+                    document.getElementById("user").disabled = true;
+                    document.getElementById("password").disabled = true;
+                    submitBtn.style.display = "none";
+                } else {
+                    showStatus("Не удалось подключиться: " + data.message, "error");
+                }
+            })
+            .catch(err => {
+                isSaving = false;
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Подключиться и сохранить";
+                showStatus("Сетевая ошибка при проверке подключения.", "error");
+            });
+        }
+
+        function startMigration() {
+            const migrateBtn = document.getElementById("migrate-btn");
+            const skipBtn = document.getElementById("skip-btn");
+            migrateBtn.disabled = true;
+            skipBtn.disabled = true;
+            migrateBtn.innerText = "Перенос данных... Пожалуйста, подождите.";
+
+            fetch('/api/setup-db/migrate', {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus("Импорт завершен успешно! Перенаправление...", "success");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    migrateBtn.disabled = false;
+                    skipBtn.disabled = false;
+                    migrateBtn.innerText = "Перенести данные из SQLite";
+                    showStatus("Ошибка переноса: " + data.message, "error");
+                }
+            })
+            .catch(err => {
+                migrateBtn.disabled = false;
+                skipBtn.disabled = false;
+                migrateBtn.innerText = "Перенести данные из SQLite";
+                showStatus("Сетевая ошибка при импорте данных.", "error");
+            });
+        }
+
+        function finishSetup() {
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
