@@ -573,7 +573,7 @@ class HTTPConnectionWrapper:
 
 
 # Version, VPS and FTP Configuration settings
-APP_VERSION = "1.98"
+APP_VERSION = "1.99"
 VPS_HOST = "89.124.92.53"
 VPS_UPDATE_URL = f"http://{VPS_HOST}/updates/version.txt"
 VPS_DOWNLOAD_URL = f"http://{VPS_HOST}/updates/easy-crm.exe"
