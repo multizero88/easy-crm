@@ -3275,6 +3275,8 @@ def add_shift_service():
 
 @app.route('/api/shift/services/<int:service_id>', methods=['DELETE'])
 def delete_shift_service(service_id):
+    if not session.get('owner_logged_in', False):
+        return jsonify({"success": False, "message": "Отмена услуг запрещена кассиру. Доступ только для владельца."}), 403
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM services WHERE id = ?", (service_id,))
@@ -3329,6 +3331,8 @@ def add_shift_expense():
 
 @app.route('/api/shift/expenses/<int:expense_id>', methods=['DELETE'])
 def delete_shift_expense(expense_id):
+    if not session.get('owner_logged_in', False):
+        return jsonify({"success": False, "message": "Отмена расходов запрещена кассиру. Доступ только для владельца."}), 403
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))

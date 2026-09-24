@@ -2163,9 +2163,8 @@ function renderSessionSales() {
                         Услуга сервиса ${payBadge}
                     </span>
                 </div>
-                <div class="session-sale-right" style="text-align: right; display: flex; align-items: center; gap: 8px;">
+                <div class="session-sale-right" style="text-align: right; display: flex; flex-direction: column; gap: 2px; align-items: flex-end;">
                     <span class="session-sale-price" style="font-weight: 700; color: #00e676; font-size: 0.92rem;">+${formatCurrency(item.amount)} сум</span>
-                    <button type="button" onclick="deleteSessionService(${item.id})" title="Отменить услугу" style="background: rgba(255, 61, 0, 0.1); border: 1px solid rgba(255, 61, 0, 0.2); color: #ff3d00; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.75rem;">&times;</button>
                 </div>
             `;
         } else if (item.type === 'expense') {
@@ -2177,9 +2176,8 @@ function renderSessionSales() {
                     <span class="session-sale-name" style="font-weight: 600; color: #ff3d00; font-size: 0.88rem;">💸 ${escapeHtml(item.name)}</span>
                     ${descHtml}
                 </div>
-                <div class="session-sale-right" style="text-align: right; display: flex; align-items: center; gap: 8px;">
+                <div class="session-sale-right" style="text-align: right; display: flex; flex-direction: column; gap: 2px; align-items: flex-end;">
                     <span class="session-sale-price" style="font-weight: 700; color: #ff3d00; font-size: 0.92rem;">-${formatCurrency(item.amount)} сум</span>
-                    <button type="button" onclick="deleteSessionExpense(${item.id})" title="Отменить расход" style="background: rgba(255, 61, 0, 0.1); border: 1px solid rgba(255, 61, 0, 0.2); color: #ff3d00; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.75rem;">&times;</button>
                 </div>
             `;
         }
