@@ -573,7 +573,7 @@ class HTTPConnectionWrapper:
 
 
 # Version, VPS and FTP Configuration settings
-APP_VERSION = "1.99"
+APP_VERSION = "2.00"
 VPS_HOST = "89.124.92.53"
 VPS_UPDATE_URL = f"http://{VPS_HOST}/updates/version.txt"
 VPS_DOWNLOAD_URL = f"http://{VPS_HOST}/updates/easy-crm.exe"
@@ -695,7 +695,8 @@ def check_for_updates():
         except Exception:
             pass
 
-        temp_new_exe = "easy-crm-new.exe"
+        current_exe, current_dir, exe_name = get_exe_info()
+        temp_new_exe = os.path.join(current_dir, "easy-crm_update.tmp")
         download_success = False
 
         # Attempt download from VPS HTTP first
@@ -703,13 +704,14 @@ def check_for_updates():
             try:
                 print(f"Downloading {remote_version} from {VPS_DOWNLOAD_URL}...")
                 req = urllib.request.Request(VPS_DOWNLOAD_URL, headers={'User-Agent': f'EasyCRM/{APP_VERSION}'})
-                with urllib.request.urlopen(req, timeout=60) as resp, open(temp_new_exe, "wb") as f:
+                with urllib.request.urlopen(req, timeout=90) as resp, open(temp_new_exe, "wb") as f:
                     while True:
-                        chunk = resp.read(131072) # 128KB chunks
+                        chunk = resp.read(262144) # 256KB chunks
                         if not chunk:
                             break
                         f.write(chunk)
-                download_success = True
+                if os.path.exists(temp_new_exe) and os.path.getsize(temp_new_exe) > 20000000:
+                    download_success = True
                 print("Download from VPS HTTP complete.")
             except Exception as dl_err:
                 print(f"HTTP download from VPS failed: {dl_err}. Falling back to FTP if available...")
@@ -722,7 +724,8 @@ def check_for_updates():
                     ftp.voidcmd('TYPE I')
                     with open(temp_new_exe, "wb") as f:
                         ftp.retrbinary("RETR easy-crm.exe", f.write)
-                    download_success = True
+                    if os.path.exists(temp_new_exe) and os.path.getsize(temp_new_exe) > 20000000:
+                        download_success = True
                     print("Download from FTP complete.")
                 except Exception as ftp_dl_err:
                     print(f"FTP download error: {ftp_dl_err}")
@@ -731,7 +734,7 @@ def check_for_updates():
                     except: pass
 
         local_file_size = os.path.getsize(temp_new_exe) if os.path.exists(temp_new_exe) else 0
-        if not download_success or local_file_size < 10000000:
+        if not download_success or local_file_size < 20000000:
             print(f"Incomplete download: {local_file_size} bytes")
             try: os.remove(temp_new_exe)
             except: pass
@@ -741,36 +744,62 @@ def check_for_updates():
         return True
     return False
 
+def get_exe_info():
+    if getattr(sys, 'frozen', False):
+        current_exe = os.path.abspath(sys.executable)
+    else:
+        current_exe = os.path.abspath(os.path.join(os.path.dirname(__file__), 'easy-crm.exe'))
+    current_dir = os.path.dirname(current_exe)
+    exe_name = os.path.basename(current_exe)
+    return current_exe, current_dir, exe_name
+
 def trigger_update_and_exit():
     try:
-        current_exe = sys.executable if getattr(sys, 'frozen', False) else 'easy-crm.exe'
-        current_dir = os.path.dirname(os.path.abspath(current_exe))
-        exe_name = os.path.basename(current_exe)
+        current_exe, current_dir, exe_name = get_exe_info()
+        temp_new_exe = os.path.join(current_dir, "easy-crm_update.tmp")
+        bat_path = os.path.join(current_dir, "update_runner.bat")
         
         bat_content = f"""@echo off
-setlocal
-cd /d "{current_dir}"
-timeout /t 1 /nobreak > nul
-taskkill /f /im "{exe_name}" > nul 2>&1
-timeout /t 1 /nobreak > nul
-:retry_copy
-if exist easy-crm-new.exe (
-    copy /y easy-crm-new.exe "{exe_name}" > nul 2>&1
-    if errorlevel 1 (
-        timeout /t 1 /nobreak > nul
-        goto retry_copy
+chcp 65001 > nul
+setlocal enabledelayedexpansion
+
+:: 1. Wait a moment for network response to complete
+ping 127.0.0.1 -n 2 > nul
+
+:: 2. Forcefully kill all running instances of easy-crm.exe
+taskkill /F /IM "{exe_name}" > nul 2>&1
+ping 127.0.0.1 -n 2 > nul
+
+:: 3. Overwrite executable with new version (retry up to 15 times)
+set ATTEMPTS=0
+:RETRY_MOVE
+set /a ATTEMPTS+=1
+if exist "{temp_new_exe}" (
+    del /f /q "{current_exe}" > nul 2>&1
+    move /y "{temp_new_exe}" "{current_exe}" > nul 2>&1
+    if exist "{temp_new_exe}" (
+        if !ATTEMPTS! LEQ 15 (
+            ping 127.0.0.1 -n 2 > nul
+            goto RETRY_MOVE
+        )
     )
-    del easy-crm-new.exe > nul 2>&1
-    start "" "{exe_name}"
 )
-del "%~f0" > nul 2>&1
+
+:: 4. Start the freshly updated application
+start "" "{current_exe}"
+
+:: 5. Self-destruct batch script
+del /f /q "%~f0" > nul 2>&1
 exit
 """
-        with open("update.bat", "w", encoding="utf-8") as f:
+        with open(bat_path, "w", encoding="utf-8") as f:
             f.write(bat_content)
+            
         import subprocess
-        subprocess.Popen("update.bat", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        os._exit(0)
+        flags = subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
+        subprocess.Popen(["cmd.exe", "/c", bat_path], cwd=current_dir, creationflags=flags)
+        
+        Timer(0.3, lambda: os._exit(0)).start()
     except Exception as e:
         print(f"Failed to launch auto-updater script: {e}")
 
@@ -993,22 +1022,29 @@ def get_system_version():
 def apply_system_update():
     global _latest_remote_version
     remote_version = _latest_remote_version or APP_VERSION
-    temp_new_exe = "easy-crm-new.exe"
+    current_exe, current_dir, exe_name = get_exe_info()
+    temp_new_exe = os.path.join(current_dir, "easy-crm_update.tmp")
     download_success = False
+    last_error = ""
 
+    # 1. Download via VPS HTTP
     try:
-        print(f"Web client requested update download from {VPS_DOWNLOAD_URL}...")
+        print(f"Downloading update from {VPS_DOWNLOAD_URL} to {temp_new_exe}...")
         req = urllib.request.Request(VPS_DOWNLOAD_URL, headers={'User-Agent': f'EasyCRM/{APP_VERSION}'})
-        with urllib.request.urlopen(req, timeout=60) as resp, open(temp_new_exe, "wb") as f:
+        with urllib.request.urlopen(req, timeout=90) as resp, open(temp_new_exe, "wb") as f:
             while True:
-                chunk = resp.read(131072)
+                chunk = resp.read(262144)
                 if not chunk:
                     break
                 f.write(chunk)
-        download_success = True
+        if os.path.exists(temp_new_exe) and os.path.getsize(temp_new_exe) > 20000000:
+            download_success = True
+            print("VPS HTTP download successful.")
     except Exception as dl_err:
+        last_error = str(dl_err)
         print(f"VPS HTTP download failed: {dl_err}. Falling back to FTP...")
 
+    # 2. Fallback to FTP
     if not download_success:
         ftp = get_ftp_connection()
         if ftp:
@@ -1016,21 +1052,26 @@ def apply_system_update():
                 ftp.voidcmd('TYPE I')
                 with open(temp_new_exe, "wb") as f:
                     ftp.retrbinary("RETR easy-crm.exe", f.write)
-                download_success = True
+                if os.path.exists(temp_new_exe) and os.path.getsize(temp_new_exe) > 20000000:
+                    download_success = True
+                    print("FTP download successful.")
             except Exception as ftp_err:
+                last_error = str(ftp_err)
                 print(f"FTP download error: {ftp_err}")
             finally:
                 try: ftp.quit()
                 except: pass
 
     local_size = os.path.getsize(temp_new_exe) if os.path.exists(temp_new_exe) else 0
-    if not download_success or local_size < 10000000:
+    if not download_success or local_size < 20000000:
         if os.path.exists(temp_new_exe):
             try: os.remove(temp_new_exe)
             except: pass
-        return jsonify({"success": False, "message": "Не удалось загрузить файл обновления с сервера. Проверьте интернет-соединение."}), 500
+        err_msg = f"Не удалось загрузить файл обновления ({last_error or 'размер файла меньше 20 МБ'}). Проверьте интернет-соединение."
+        return jsonify({"success": False, "message": err_msg}), 500
 
-    Timer(0.8, trigger_update_and_exit).start()
+    # Schedule updater runner script
+    Timer(0.5, trigger_update_and_exit).start()
     return jsonify({"success": True, "message": "Обновление успешно загружено. Приложение перезапускается..."})
 
 # --- DATABASE SETUP INTERCEPTS & ENDPOINTS ---

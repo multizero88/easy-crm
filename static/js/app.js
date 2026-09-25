@@ -247,9 +247,24 @@ function executeAppUpdate() {
         .then(data => {
             if (data.success) {
                 if (progressStatus) progressStatus.innerText = "Обновление готово! Программа перезапускается...";
-                setTimeout(() => {
-                    window.location.reload();
-                }, 3000);
+                let pollAttempts = 0;
+                const pollInterval = setInterval(() => {
+                    pollAttempts++;
+                    fetch('/api/system/version')
+                        .then(r => r.json())
+                        .then(v => {
+                            if (v.success) {
+                                clearInterval(pollInterval);
+                                window.location.reload();
+                            }
+                        })
+                        .catch(() => {
+                            if (pollAttempts > 30) {
+                                clearInterval(pollInterval);
+                                window.location.reload();
+                            }
+                        });
+                }, 1000);
             } else {
                 alert(data.message || "Ошибка при обновлении");
                 if (btnApply) btnApply.disabled = false;
@@ -258,9 +273,26 @@ function executeAppUpdate() {
             }
         })
         .catch(err => {
-            console.error("Update apply network error (restarting?):", err);
+            console.warn("Server restarting during update:", err);
             if (progressStatus) progressStatus.innerText = "Приложение обновляется и перезапускается...";
-            setTimeout(() => { window.location.reload(); }, 4000);
+            let pollAttempts = 0;
+            const pollInterval = setInterval(() => {
+                pollAttempts++;
+                fetch('/api/system/version')
+                    .then(r => r.json())
+                    .then(v => {
+                        if (v.success) {
+                            clearInterval(pollInterval);
+                            window.location.reload();
+                        }
+                    })
+                    .catch(() => {
+                        if (pollAttempts > 30) {
+                            clearInterval(pollInterval);
+                            window.location.reload();
+                        }
+                    });
+            }, 1000);
         });
 }
 
