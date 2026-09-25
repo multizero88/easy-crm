@@ -3095,6 +3095,89 @@ function renderStats() {
             });
         }
     }
+
+    // Render Analytics Services Table
+    const srvBody = document.getElementById("analytics-services-tbody");
+    const srvBadge = document.getElementById("analytics-services-total-badge");
+    if (srvBody) {
+        srvBody.innerHTML = "";
+        const servicesList = periodData.services_list || [];
+        const servicesTotal = periodData.services_total || 0;
+        
+        if (srvBadge) {
+            srvBadge.innerText = `${formatCurrency(servicesTotal)} сум`;
+        }
+        
+        if (servicesList.length === 0) {
+            srvBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">Услуг за выбранный период нет</td></tr>';
+        } else {
+            servicesList.forEach(srv => {
+                const tr = document.createElement("tr");
+                
+                let formattedTime = "—";
+                if (srv.created_at) {
+                    const rawDateStr = String(srv.created_at).split('.')[0];
+                    const parts = rawDateStr.split(' ');
+                    if (parts.length === 2) {
+                        const dParts = parts[0].split('-');
+                        const tParts = parts[1].split(':');
+                        formattedTime = `${dParts[2]}.${dParts[1]}, ${tParts[0]}:${tParts[1]}`;
+                    } else {
+                        formattedTime = rawDateStr;
+                    }
+                }
+                
+                let payment = '<span style="color: #00e676; font-weight: 500;">💵 Нал</span>';
+                if (srv.payment_method === 'card') {
+                    payment = '<span style="color: #00e5ff; font-weight: 500;">💳 Карта</span>';
+                } else if (srv.payment_method === 'transfer') {
+                    payment = '<span style="color: #ffeb3b; font-weight: 500;">📱 Перевод</span>';
+                }
+                
+                const shiftInfo = srv.shift_id ? `Смена #${srv.shift_id}${srv.cashier_name ? ' (' + escapeHtml(srv.cashier_name) + ')' : ''}` : '—';
+                const safeName = (srv.name || 'Услуга').replace(/'/g, "\\'");
+                
+                tr.innerHTML = `
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">${formattedTime}</td>
+                    <td style="font-weight: 600; color: #fff;">🛠️ ${escapeHtml(srv.name || 'Услуга')}</td>
+                    <td style="font-weight: 700; color: #00e676;">+${formatCurrency(srv.amount)} сум</td>
+                    <td style="font-size: 0.85rem;">${payment}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.82rem;">${shiftInfo}</td>
+                    <td style="text-align: center;">
+                        <button class="action-icon-btn btn-delete-prd" onclick="deleteServiceFromAnalytics(${srv.id}, '${safeName}', ${srv.amount})" title="Удалить услугу" style="background: rgba(255, 61, 0, 0.1); color: #ff3d00; border: 1px solid rgba(255, 61, 0, 0.3); padding: 5px 12px; font-size: 0.75rem; border-radius: 6px; cursor: pointer;">
+                            🗑️ Удалить
+                        </button>
+                    </td>
+                `;
+                srvBody.appendChild(tr);
+            });
+        }
+    }
+}
+
+async function deleteServiceFromAnalytics(serviceId, serviceName, amount) {
+    if (!confirm(`Вы действительно хотите удалить услугу "${serviceName}" на сумму ${formatCurrency(amount)} сум из базы данных и аналитики?`)) {
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/shift/services/${serviceId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToastMessage("Услуга успешно удалена!");
+            loadStats();
+            if (typeof loadChartsData === 'function') loadChartsData();
+            if (typeof checkActiveShiftStatus === 'function') checkActiveShiftStatus();
+        } else {
+            alert("Ошибка при удалении услуги: " + data.message);
+        }
+    } catch (err) {
+        console.error("Error deleting service from analytics:", err);
+        alert("Сетевая ошибка при удалении услуги.");
+    }
 }
 
 // --- Utilities ---

@@ -573,7 +573,7 @@ class HTTPConnectionWrapper:
 
 
 # Version, VPS and FTP Configuration settings
-APP_VERSION = "2.00"
+APP_VERSION = "2.01"
 VPS_HOST = "89.124.92.53"
 VPS_UPDATE_URL = f"http://{VPS_HOST}/updates/version.txt"
 VPS_DOWNLOAD_URL = f"http://{VPS_HOST}/updates/easy-crm.exe"
@@ -3979,6 +3979,15 @@ def compute_stats_internal(cursor):
     ''')
     today_sales_by_type = [dict(row) for row in cursor.fetchall()]
     
+    cursor.execute('''
+        SELECT id, shift_id, name, amount, payment_method, cashier_name, created_at
+        FROM services
+        WHERE DATE(created_at) = DATE('now', 'localtime')
+        ORDER BY id DESC
+    ''')
+    today_services_list = [dict(row) for row in cursor.fetchall()]
+    today_services_total = sum(float(r['amount'] or 0.0) for r in today_services_list)
+    
     # === ALL-TIME STATS ===
     cursor.execute("""
         SELECT 
@@ -4025,6 +4034,15 @@ def compute_stats_internal(cursor):
         ORDER BY revenue DESC, sold_qty DESC
     ''')
     all_time_sales_by_type = [dict(row) for row in cursor.fetchall()]
+    
+    cursor.execute('''
+        SELECT id, shift_id, name, amount, payment_method, cashier_name, created_at
+        FROM services
+        ORDER BY id DESC
+        LIMIT 100
+    ''')
+    all_time_services_list = [dict(row) for row in cursor.fetchall()]
+    all_time_services_total = sum(float(r['amount'] or 0.0) for r in all_time_services_list)
     
     # === GLOBAL METRICS ===
     cursor.execute("""
@@ -4145,6 +4163,8 @@ def compute_stats_internal(cursor):
             "items_sold": today_items_sold,
             "top_products": today_top_products,
             "sales_list": today_sales_list,
+            "services_list": today_services_list,
+            "services_total": round(today_services_total, 2),
             "sales_by_type": today_sales_by_type,
             "sales_by_model": today_sales_by_model,
             "top_products_detailed": today_top_products_detailed
@@ -4158,6 +4178,8 @@ def compute_stats_internal(cursor):
             "items_sold": total_items_sold,
             "top_products": all_time_top_products,
             "sales_list": all_time_sales_list,
+            "services_list": all_time_services_list,
+            "services_total": round(all_time_services_total, 2),
             "sales_by_type": all_time_sales_by_type,
             "sales_by_model": all_time_sales_by_model,
             "top_products_detailed": all_time_top_products_detailed

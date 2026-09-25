@@ -856,6 +856,39 @@
                         </div>
                     </div>
 
+                    <!-- Services list in Analytics -->
+                    <div class="report-box" style="margin-top: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                <span>🛠️ Оказанные услуги</span>
+                            </h3>
+                            <div id="analytics-services-total-badge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; padding: 4px 14px; border-radius: 20px; font-weight: bold; font-size: 0.92rem; border: 1px solid rgba(0, 230, 118, 0.3);">
+                                0 сум
+                            </div>
+                        </div>
+                        <div class="table-scroll-wrapper" style="max-height: 350px; overflow-y: auto;">
+                            <table class="standard-table" style="font-size: 0.9rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 140px;">Время</th>
+                                        <th>Название услуги</th>
+                                        <th>Сумма</th>
+                                        <th>Оплата</th>
+                                        <th>Смена / Кассир</th>
+                                        <th style="text-align: center; width: 140px;">Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-services-tbody">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                                            Услуг за выбранный период нет
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Discrepancy (Mismatches) list -->
                     <div class="report-box" style="margin-top: 25px;">
                         <h3 style="margin: 0 0 15px 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
